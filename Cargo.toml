@@ -6,7 +6,6 @@ edition = "2024"
 [features]
 default = ["audio-wav"]
 audio-wav = ["hound"]
-audio-extended = ["audio-wav", "symphonia", "rubato", "ogg-opus"]
 serde-support = ["serde"]
 
 [dependencies]
@@ -20,14 +19,8 @@ anyhow = "1.0.100"
 thiserror = "2.0.17"
 # WAV encoder/decoder for PCM audio
 hound = { version = "3.5.1", optional = true }
-# Pure Rust media demuxer/decoder supporting common codecs
-symphonia = { version = "0.5.5", optional = true, default-features = false, features = ["mp3"] }
-# Asynchronous audio resampling toolkit (stable release)
-rubato = { version = "0.14.1", optional = true }
 # Serialization/deserialization framework with derive macros
 serde = { version = "1.0.228", features = ["derive"], optional = true }
-# Ogg Opus decoder bridging to libopus via audiopus
-ogg-opus = { version = "0.1.2", optional = true }
 
 [dev-dependencies]
 # Approximate floating point comparisons for tests

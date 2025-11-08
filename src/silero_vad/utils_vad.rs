@@ -2,9 +2,6 @@ use crate::silero_vad::model::OnnxModel;
 use crate::silero_vad::{Result, SileroError};
 
 use std::path::Path;
-
-#[cfg(feature = "audio-extended")]
-use std::fs::File;
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct SpeechTimestamp {
@@ -75,17 +72,10 @@ pub fn read_audio<P: AsRef<Path>>(path: P, sampling_rate: u32) -> Result<Vec<f32
     let (mut samples, source_sr) = match extension.as_deref() {
         Some("wav") => read_wav_file(path)?,
         _ => {
-            #[cfg(feature = "audio-extended")]
-            {
-                read_extended_audio(path)?
-            }
-            #[cfg(not(feature = "audio-extended"))]
-            {
-                return Err(make_error(format!(
-                    "Unsupported audio container for `{}`. Enable the `audio-extended` feature for non-WAV formats.",
-                    path.display()
-                )));
-            }
+            return Err(make_error(format!(
+                "Unsupported audio container `{}`. Only WAV files are supported.",
+                path.display()
+            )));
         }
     };
 
@@ -701,155 +691,6 @@ fn read_wav_file(_path: &Path) -> Result<(Vec<f32>, u32)> {
     Err(make_error(
         "WAV support is disabled. Enable the `audio-wav` feature to read WAV files.",
     ))
-}
-
-#[cfg(feature = "audio-extended")]
-fn read_extended_audio(path: &Path) -> Result<(Vec<f32>, u32)> {
-    if path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .map(|ext| ext.eq_ignore_ascii_case("opus"))
-        .unwrap_or(false)
-    {
-        return read_opus_file(path);
-    }
-
-    use symphonia::core::audio::SampleBuffer;
-    use symphonia::core::codecs::DecoderOptions;
-    use symphonia::core::errors::Error as SymphoniaError;
-    use symphonia::core::formats::FormatOptions;
-    use symphonia::core::io::MediaSourceStream;
-    use symphonia::core::meta::MetadataOptions;
-    use symphonia::core::probe::Hint;
-
-    let file = File::open(path).map_err(|e| {
-        make_error(format!(
-            "Failed to open audio file {}: {}",
-            path.display(),
-            e
-        ))
-    })?;
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
-
-    let mut hint = Hint::new();
-    if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {
-        hint.with_extension(ext);
-    }
-
-    let probed = symphonia::default::get_probe()
-        .format(
-            &hint,
-            mss,
-            &FormatOptions::default(),
-            &MetadataOptions::default(),
-        )
-        .map_err(|e| make_error(format!("Failed to probe audio format: {}", e)))?;
-    let mut format = probed.format;
-
-    let track = format
-        .default_track()
-        .ok_or_else(|| make_error("Audio stream does not contain a default track"))?;
-
-    let sample_rate = track
-        .codec_params
-        .sample_rate
-        .ok_or_else(|| make_error("Audio stream does not expose a sample rate"))?;
-    let channels = track.codec_params.channels.map(|c| c.count()).unwrap_or(1);
-
-    let mut decoder = symphonia::default::get_codecs()
-        .make(&track.codec_params, &DecoderOptions::default())
-        .map_err(|e| make_error(format!("Failed to create decoder: {}", e)))?;
-
-    let mut samples = Vec::new();
-    let mut sample_buf: Option<SampleBuffer<f32>> = None;
-
-    loop {
-        let packet = match format.next_packet() {
-            Ok(packet) => packet,
-            Err(SymphoniaError::IoError(err))
-                if err.kind() == std::io::ErrorKind::UnexpectedEof =>
-            {
-                break;
-            }
-            Err(err) => {
-                return Err(make_error(format!("Failed to read audio packet: {}", err)));
-            }
-        };
-
-        let decoded = match decoder.decode(&packet) {
-            Ok(decoded) => decoded,
-            Err(SymphoniaError::IoError(err))
-                if err.kind() == std::io::ErrorKind::UnexpectedEof =>
-            {
-                break;
-            }
-            Err(SymphoniaError::DecodeError(_)) => continue,
-            Err(err) => {
-                return Err(make_error(format!(
-                    "Failed to decode audio packet: {}",
-                    err
-                )));
-            }
-        };
-
-        let audio_buf = decoded;
-        let spec = *audio_buf.spec();
-        let frames = audio_buf.frames();
-
-        if sample_buf
-            .as_ref()
-            .map(|buf| buf.capacity() < frames)
-            .unwrap_or(true)
-        {
-            sample_buf = Some(SampleBuffer::<f32>::new(frames as u64, spec));
-        }
-
-        let buf = sample_buf.as_mut().expect("sample buffer initialized");
-        buf.copy_interleaved_ref(audio_buf);
-
-        if channels == 1 {
-            samples.extend_from_slice(buf.samples());
-        } else {
-            let frame_len = channels;
-            for frame in buf.samples().chunks(frame_len) {
-                let sum: f32 = frame.iter().copied().sum();
-                samples.push(sum / channels as f32);
-            }
-        }
-    }
-
-    Ok((samples, sample_rate))
-}
-
-#[cfg(feature = "audio-extended")]
-fn read_opus_file(path: &Path) -> Result<(Vec<f32>, u32)> {
-    const TARGET_SAMPLE_RATE: u32 = 48_000;
-
-    let file = File::open(path).map_err(|e| {
-        make_error(format!(
-            "Failed to open audio file {}: {}",
-            path.display(),
-            e
-        ))
-    })?;
-
-    let (pcm, play_data) = ogg_opus::decode::<_, TARGET_SAMPLE_RATE>(file).map_err(|e| {
-        make_error(format!(
-            "Failed to decode Opus audio stream ({}): {}",
-            path.display(),
-            e
-        ))
-    })?;
-
-    let channels = play_data.channels.max(1) as usize;
-    let mut samples = Vec::with_capacity(pcm.len());
-    let scale = i16::MAX as f32;
-    for sample in pcm {
-        samples.push(sample as f32 / scale);
-    }
-    let mono = interleaved_to_mono(samples, channels);
-
-    Ok((mono, TARGET_SAMPLE_RATE))
 }
 
 fn interleaved_to_mono(samples: Vec<f32>, channels: usize) -> Vec<f32> {

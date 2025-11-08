@@ -58,28 +58,6 @@ fn onnx_model_processes_wav_audio() -> Result<()> {
     process_audio_sample("test.wav")
 }
 
-#[cfg(feature = "audio-extended")]
-#[test]
-fn onnx_model_processes_compressed_audio() -> Result<()> {
-    for file in ["test.opus", "test.mp3"] {
-        process_audio_sample(file)?;
-    }
-    Ok(())
-}
-
-#[cfg(not(feature = "audio-extended"))]
-#[test]
-fn compressed_audio_requires_feature_flag() {
-    for file in ["test.opus", "test.mp3"] {
-        let result = read_audio(data_path(file), 16_000);
-        assert!(
-            result.is_err(),
-            "reading {} without `audio-extended` feature should fail",
-            file
-        );
-    }
-}
-
 #[test]
 fn torchscript_models_are_not_supported() {
     let mut options = silero_vad_rust::silero_vad::model::LoadOptions::default();
