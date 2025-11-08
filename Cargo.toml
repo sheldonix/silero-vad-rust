@@ -6,7 +6,6 @@ edition = "2024"
 [features]
 default = ["audio-wav"]
 audio-wav = ["hound"]
-serde-support = ["serde"]
 
 [dependencies]
 # Safe bindings for ONNX Runtime 1.22
@@ -19,9 +18,6 @@ anyhow = "1.0.100"
 thiserror = "2.0.17"
 # WAV encoder/decoder for PCM audio
 hound = { version = "3.5.1", optional = true }
-# Serialization/deserialization framework with derive macros
-serde = { version = "1.0.228", features = ["derive"], optional = true }
-
 [dev-dependencies]
 # Approximate floating point comparisons for tests
 approx = "0.5.1"
