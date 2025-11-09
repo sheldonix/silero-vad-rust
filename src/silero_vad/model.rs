@@ -5,10 +5,14 @@ use ndarray::{Array1, Array2, ArrayD, Axis, s};
 use ort::{execution_providers::CPUExecutionProvider, session::Session, value::Tensor};
 use std::path::{Path, PathBuf};
 
+/// Configuration for loading Silero VAD models.
 #[derive(Debug, Clone)]
 pub struct LoadOptions {
+    /// Whether to load the ONNX version of the model (must be `true` for now).
     pub use_onnx: bool,
+    /// Target ONNX opset version (15 or 16) for the bundled weights.
     pub opset_version: u32,
+    /// Forces the ONNX Runtime session to use the CPU execution provider only.
     pub force_onnx_cpu: bool,
 }
 
@@ -22,6 +26,7 @@ impl Default for LoadOptions {
     }
 }
 
+/// Thin wrapper around the Silero ONNX model with internal state buffers.
 #[derive(Debug)]
 pub struct OnnxModel {
     session: Session,
@@ -33,6 +38,7 @@ pub struct OnnxModel {
 }
 
 impl OnnxModel {
+    /// Builds an [`OnnxModel`] from a filesystem path to an ONNX file.
     pub fn from_path(path: impl AsRef<Path>, force_cpu: bool) -> Result<Self> {
         let path = path.as_ref();
         if !path.exists() {
@@ -149,6 +155,7 @@ impl OnnxModel {
         Ok((input, sr))
     }
 
+    /// Clears the internal recurrent state and cached metadata.
     pub fn reset_states(&mut self) {
         self.context = None;
         self.state = ArrayD::<f32>::zeros(ndarray::IxDyn(&[2, 1, 128]));
@@ -156,11 +163,16 @@ impl OnnxModel {
         self.last_batch_size = None;
     }
 
+    /// Runs a single audio frame through the network.
+    ///
+    /// The `chunk` length must match the expected window for the provided
+    /// sample rate (512 samples at 16 kHz, 256 samples at 8 kHz).
     pub fn forward_chunk(&mut self, chunk: &[f32], sr: u32) -> Result<Array2<f32>> {
         let array = Array2::from_shape_vec((1, chunk.len()), chunk.to_vec())?;
         self.forward(array, sr)
     }
 
+    /// Runs a batch of audio frames and returns speech probabilities.
     pub fn forward(&mut self, input: Array2<f32>, sr: u32) -> Result<Array2<f32>> {
         let (input, sr) = self.normalize_input(input, sr)?;
         let batch_size = input.nrows();
@@ -255,6 +267,7 @@ impl OnnxModel {
         Ok(output)
     }
 
+    /// Processes an entire audio buffer by tiling it into model-sized chunks.
     pub fn audio_forward(&mut self, audio: &[f32], sr: u32) -> Result<Array2<f32>> {
         let array = Array2::from_shape_vec((1, audio.len()), audio.to_vec())?;
         let (mut array, sr) = self.normalize_input(array, sr)?;
@@ -285,15 +298,18 @@ impl OnnxModel {
         Ok(concatenated)
     }
 
+    /// Returns the sampling rates supported by the underlying ONNX file.
     pub fn sample_rates(&self) -> &[u32] {
         &self.sample_rates
     }
 }
 
+/// Loads the default Silero ONNX model (opset 16, CPU-only).
 pub fn load_silero_vad() -> Result<OnnxModel> {
     load_silero_vad_with_options(LoadOptions::default())
 }
 
+/// Loads a Silero ONNX model using the provided [`LoadOptions`].
 pub fn load_silero_vad_with_options(options: LoadOptions) -> Result<OnnxModel> {
     if !options.use_onnx {
         return Err(SileroError::Message(

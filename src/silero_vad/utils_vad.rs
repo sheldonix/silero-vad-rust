@@ -2,28 +2,45 @@ use crate::silero_vad::model::OnnxModel;
 use crate::silero_vad::{Result, SileroError};
 
 use std::path::Path;
+/// Timestamp describing the start/end of a detected speech segment.
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct SpeechTimestamp {
+    /// Start position (seconds or samples depending on context).
     pub start: f64,
+    /// End position (seconds or samples depending on context).
     pub end: f64,
 }
 
+/// Configuration knobs mirroring the original Silero VAD Python helpers.
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct VadParameters {
+    /// Positive speech probability threshold.
     pub threshold: f32,
+    /// Input sampling rate in Hz (8 kHz or 16 kHz).
     pub sampling_rate: u32,
+    /// Minimum duration counted as speech (milliseconds).
     pub min_speech_duration_ms: u32,
+    /// Maximum duration per speech chunk (seconds).
     pub max_speech_duration_s: f32,
+    /// Minimum silence required to close an utterance (milliseconds).
     pub min_silence_duration_ms: u32,
+    /// Number of milliseconds to pad before/after each segment.
     pub speech_pad_ms: u32,
+    /// Convert timestamps to seconds instead of samples.
     pub return_seconds: bool,
+    /// Decimal precision for returned timestamps (0 = integer).
     pub time_resolution: u32,
+    /// Whether to keep intermediate probability traces for visualization.
     pub visualize_probs: bool,
+    /// Optional custom negative threshold override.
     pub neg_threshold: Option<f32>,
+    /// Optional override for model window size (samples).
     pub window_size_samples: Option<usize>,
+    /// Silence required when a chunk hits `max_speech_duration_s` (milliseconds).
     pub min_silence_at_max_speech: u32,
+    /// Whether to pick the longest possible silence window when splitting long speech.
     pub use_max_possible_silence: bool,
 }
 
@@ -51,6 +68,7 @@ fn make_error(message: impl Into<String>) -> SileroError {
     SileroError::Message(message.into())
 }
 
+/// Reads a mono WAV file and resamples it to `sampling_rate` if needed.
 #[allow(dead_code)]
 pub fn read_audio<P: AsRef<Path>>(path: P, sampling_rate: u32) -> Result<Vec<f32>> {
     let path = path.as_ref();
@@ -86,6 +104,7 @@ pub fn read_audio<P: AsRef<Path>>(path: P, sampling_rate: u32) -> Result<Vec<f32
     Ok(samples)
 }
 
+/// Writes PCM samples to a mono WAV file (requires the `audio-wav` feature).
 #[allow(dead_code)]
 pub fn save_audio<P: AsRef<Path>>(path: P, samples: &[f32], sampling_rate: u32) -> Result<()> {
     let path = path.as_ref();
@@ -133,6 +152,7 @@ pub fn save_audio<P: AsRef<Path>>(path: P, samples: &[f32], sampling_rate: u32) 
     }
 }
 
+/// Concatenates speech chunks into a single buffer.
 #[allow(dead_code)]
 pub fn collect_chunks(
     timestamps: &[SpeechTimestamp],
@@ -169,6 +189,7 @@ pub fn collect_chunks(
     Ok(result)
 }
 
+/// Removes speech chunks and keeps the background sections.
 #[allow(dead_code)]
 pub fn drop_chunks(
     timestamps: &[SpeechTimestamp],
@@ -206,12 +227,17 @@ pub fn drop_chunks(
     Ok(result)
 }
 
+/// Lightweight subset of [`VadParameters`] for streaming iterators.
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct VadIteratorParams {
+    /// Positive speech probability threshold.
     pub threshold: f32,
+    /// Input sampling rate in Hz (8 kHz or 16 kHz).
     pub sampling_rate: u32,
+    /// Minimum silence required to emit an `End` event (milliseconds).
     pub min_silence_duration_ms: u32,
+    /// Padding applied to `Start`/`End` events (milliseconds).
     pub speech_pad_ms: u32,
 }
 
@@ -226,17 +252,23 @@ impl Default for VadIteratorParams {
     }
 }
 
+/// Streaming VAD events emitted by [`VadIterator`].
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum VadEvent {
+    /// Speech activity started at the provided position.
     Start(f64),
+    /// Speech activity ended at the provided position.
     End(f64),
 }
 
+/// Iterator-style helper for reacting to speech start/end events.
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct VadIterator {
+    /// Underlying Silero ONNX model used for inference.
     pub model: OnnxModel,
+    /// Iterator-level configuration knobs.
     pub params: VadIteratorParams,
     triggered: bool,
     temp_end: Option<usize>,
@@ -246,6 +278,7 @@ pub struct VadIterator {
 }
 
 impl VadIterator {
+    /// Creates a new iterator with the given model and parameters.
     #[allow(dead_code)]
     pub fn new(model: OnnxModel, params: VadIteratorParams) -> Result<Self> {
         if !matches!(params.sampling_rate, 8_000 | 16_000) {
@@ -267,6 +300,7 @@ impl VadIterator {
         Ok(iterator)
     }
 
+    /// Resets the internal ONNX model state and iterator bookkeeping.
     #[allow(dead_code)]
     pub fn reset_states(&mut self) {
         self.model.reset_states();
@@ -279,6 +313,7 @@ impl VadIterator {
             self.params.sampling_rate as f64 * self.params.speech_pad_ms as f64 / 1000.0;
     }
 
+    /// Consumes an audio chunk and optionally emits a [`VadEvent`].
     #[allow(dead_code)]
     pub fn process_chunk(
         &mut self,
@@ -350,6 +385,7 @@ impl VadIterator {
     }
 }
 
+/// Runs the classic Silero VAD post-processing pipeline over an audio buffer.
 #[allow(dead_code)]
 pub fn get_speech_timestamps(
     audio: &[f32],
