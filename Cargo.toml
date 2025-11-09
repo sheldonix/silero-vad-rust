@@ -11,6 +11,7 @@ documentation = "https://docs.rs/silero-vad-rust"
 license = "MIT"
 keywords = ["silero", "vad", "onnx", "audio", "speech"]
 categories = ["multimedia::audio"]
+exclude = [".gitignore"]
 
 [features]
 default = ["audio-wav"]
