@@ -4,6 +4,7 @@ Rust port of the [Silero Voice Activity Detector](https://github.com/snakers4/si
 
 ## Features
 
+- 🌍 **Universal** — Silero VAD was trained on massive corpora covering 6,000+ languages, so it performs well across domains and under noisy conditions.
 - 🧠 **Pre-trained accuracy** — ships with Silero ONNX models (`opset 15` & `16`) inside `src/silero_vad/data`, so no extra downloads are required.
 - 🖥️ **CPU friendly** — defaults to ONNX Runtime’s CPU execution provider for predictable server and edge runs, while keeping other providers available if you reconfigure `LoadOptions`.
 - 🔄 **Streaming ready** — `forward_chunk` keeps internal state for long-running streams, while `audio_forward` processes entire buffers offline.
@@ -184,6 +185,13 @@ Integration tests use WAV fixtures in `tests/data`.
 - `load_silero_vad_with_options` lets you pick `opset_version` 15/16 and toggle `force_onnx_cpu`.
 - TorchScript weights are intentionally unsupported in this port; always pass `use_onnx = true`.
 - When building without audio I/O, disable the default feature: `cargo build --no-default-features`.
+
+## Application Scenarios
+
+- Voice activity detection for IoT / edge / mobile deployments
+- Offline data cleaning and generic voice-detection pipelines
+- Telephony, call-center automation, and voice bots
+- Voice interfaces and conversational UX layers
 
 ## License
 
