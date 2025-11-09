@@ -2,6 +2,8 @@
 
 Rust port of the [Silero Voice Activity Detector](https://github.com/snakers4/silero-vad) that runs the pre-trained ONNX models through the safe `ort` bindings. The crate bundles the original ONNX weights and exposes idiomatic Rust helpers for loading audio, running the network, and post-processing speech segments.
 
+![Comparison with other VAD models](docs/assets/comparison-with-other-vad-models.png)
+
 ## Features
 
 - 🌍 **Universal** — Silero VAD was trained on massive corpora covering 6,000+ languages, so it performs well across domains and under noisy conditions.
