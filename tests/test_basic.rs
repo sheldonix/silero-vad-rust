@@ -60,8 +60,10 @@ fn onnx_model_processes_wav_audio() -> Result<()> {
 
 #[test]
 fn torchscript_models_are_not_supported() {
-    let mut options = silero_vad_rust::silero_vad::model::LoadOptions::default();
-    options.use_onnx = false;
+    let options = silero_vad_rust::silero_vad::model::LoadOptions {
+        use_onnx: false,
+        ..Default::default()
+    };
     let error = load_silero_vad_with_options(options)
         .expect_err("TorchScript models are intentionally unsupported");
     assert!(

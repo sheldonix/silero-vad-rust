@@ -367,7 +367,7 @@ pub fn get_speech_timestamps(
     }
 
     let mut step = 1usize;
-    if sampling_rate > 16_000 && sampling_rate % 16_000 == 0 {
+    if sampling_rate > 16_000 && sampling_rate.is_multiple_of(16_000) {
         let factor = (sampling_rate / 16_000) as usize;
         step = factor.max(1);
         sampling_rate = 16_000;
@@ -397,8 +397,7 @@ pub fn get_speech_timestamps(
         sampling_rate as f64 * params.min_silence_at_max_speech as f64 / 1000.0;
 
     let audio_length_samples = audio_vec.len();
-    let mut speech_probs =
-        Vec::with_capacity((audio_length_samples + window_size_samples - 1) / window_size_samples);
+    let mut speech_probs = Vec::with_capacity(audio_length_samples.div_ceil(window_size_samples));
 
     let mut idx = 0usize;
     while idx < audio_length_samples {

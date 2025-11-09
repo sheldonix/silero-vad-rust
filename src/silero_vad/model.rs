@@ -99,7 +99,7 @@ impl OnnxModel {
 
     fn ensure_state(&mut self, batch_size: usize, sr: u32) {
         let desired_shape = [2, batch_size, 128];
-        if self.state.shape() != &desired_shape {
+        if self.state.shape() != desired_shape {
             self.state = ArrayD::<f32>::zeros(ndarray::IxDyn(&desired_shape));
         }
 
@@ -114,10 +114,10 @@ impl OnnxModel {
 
     fn normalize_input(&self, mut input: Array2<f32>, sr: u32) -> Result<(Array2<f32>, u32)> {
         let mut sr = sr;
-        if sr != 16_000 && sr % 16_000 == 0 {
+        if sr != 16_000 && sr.is_multiple_of(16_000) {
             let step = (sr / 16_000) as usize;
             let cols = input.ncols();
-            let new_cols = (cols + step - 1) / step;
+            let new_cols = cols.div_ceil(step);
             let mut downsampled = Array2::<f32>::zeros((input.nrows(), new_cols));
             for row in 0..input.nrows() {
                 let mut dst_col = 0;
