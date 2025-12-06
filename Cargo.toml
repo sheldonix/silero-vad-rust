@@ -9,7 +9,7 @@ homepage = "https://github.com/sheldonix/silero-vad-rust"
 repository = "https://github.com/sheldonix/silero-vad-rust"
 documentation = "https://docs.rs/silero-vad-rust"
 license = "MIT"
-keywords = ["silero", "vad", "onnx", "audio", "speech"]
+keywords = ["silero", "vad", "onnx", "audio", "speech", "silero-vad-rs"]
 categories = ["multimedia::audio"]
 exclude = [".gitignore"]
 

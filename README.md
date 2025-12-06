@@ -21,6 +21,21 @@ cargo add silero-vad-rust
 
 The crate expects the ONNX Runtime shared library to be discoverable at runtime (`ort` with `load-dynamic`). See the [ort crate docs](https://docs.rs/ort/) if you need to pin a specific runtime build.
 
+> **Strongly recommend ONNX Runtime `1.22.x`** (older releases are not supported; newer releases may be incompatible).
+
+Official prebuilt ONNX Runtime binaries (Windows):
+
+- [onnxruntime-win-x64-1.22.1.zip](https://github.com/microsoft/onnxruntime/releases/download/v1.22.1/onnxruntime-win-x64-1.22.1.zip) - 70.3 MB  
+  SHA256: `855276cd4be3cda14fe636c69eb038d75bf5bcd552bda1193a5d79c51f436dfe`
+- [onnxruntime-win-x64-gpu-1.22.1.zip](https://github.com/microsoft/onnxruntime/releases/download/v1.22.1/onnxruntime-win-x64-gpu-1.22.1.zip) - 300 MB  
+  SHA256: `4e6eeb8bfe4137cf98ccdc0b01f0400928bc3f8261b90e8e0d1c28410a33cac4`
+- [onnxruntime-win-x86-1.22.1.zip](https://github.com/microsoft/onnxruntime/releases/download/v1.22.1/onnxruntime-win-x86-1.22.1.zip) - 69.2 MB  
+  SHA256: `da9fe96efacb0d1b9f4ae0b8f69f9694b6b3f673fc2a697c6b932679610ed292`
+- [onnxruntime-win-arm64-1.22.1.zip](https://github.com/microsoft/onnxruntime/releases/download/v1.22.1/onnxruntime-win-arm64-1.22.1.zip) - 70.1 MB  
+  SHA256: `3c984f25de07fdbbd2be36792dabfa18810c7483262238ea241ca5a1e52a4f82`
+
+After downloading and extracting one of the archives, place `onnxruntime.dll` next to your executable (or ensure it is on your library path) so the dynamic loader can find it.
+
 ## Quick Start
 
 ### Offline Pass
