@@ -1,5 +1,11 @@
 # Silero VAD (Rust)
 
+[![crates.io](https://img.shields.io/crates/v/silero-vad-rust)](https://crates.io/crates/silero-vad-rust)
+[![crates.io downloads](https://img.shields.io/crates/d/silero-vad-rust)](https://crates.io/crates/silero-vad-rust)
+![ONNX Runtime](https://img.shields.io/badge/ONNX%20Runtime-1.22.x-orange)
+[![docs.rs](https://img.shields.io/docsrs/silero-vad-rust)](https://docs.rs/silero-vad-rust)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Rust port of the [Silero Voice Activity Detector](https://github.com/snakers4/silero-vad) that runs the pre-trained ONNX models through the safe `ort` bindings. The crate bundles the original ONNX weights and exposes idiomatic Rust helpers for loading audio, running the network, and post-processing speech segments.
 
 ![Comparison with other VAD models](docs/assets/comparison-with-other-vad-models.png)
