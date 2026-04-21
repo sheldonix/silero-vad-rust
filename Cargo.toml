@@ -14,12 +14,13 @@ categories = ["multimedia::audio"]
 exclude = [".gitignore"]
 
 [features]
-default = ["audio-wav"]
+default = ["audio-wav", "ort-load-dynamic"]
 audio-wav = ["hound"]
+ort-load-dynamic = ["ort/load-dynamic"]
 
 [dependencies]
 # Safe bindings for ONNX Runtime 1.22
-ort = { version = "2.0.0-rc.10", features = ["load-dynamic", "ndarray"] }
+ort = { version = "2.0.0-rc.10", features = ["ndarray"] }
 # n-dimensional array math with slicing and views (kept in sync with ort)
 ndarray = "0.16.1"
 # Flexible concrete Error type for ergonomic error handling
