@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to crates.io after all checks pass
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ORT_VERSION: 1.22.0
+
+jobs:
+  crates-io:
+    name: crates.io
+    runs-on: ubuntu-24.04
+    environment: crates.io
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install ONNX Runtime
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/onnxruntime.tgz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz" \
+            --output "$archive"
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          echo "ORT_DYLIB_PATH=$RUNNER_TEMP/onnxruntime-linux-x64-${ORT_VERSION}/lib/libonnxruntime.so" >> "$GITHUB_ENV"
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --all-features
+      - run: cargo check --locked --no-default-features
+      - run: cargo doc --locked --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Verify release tag
+        if: github.event_name == 'push' || inputs.publish
+        shell: bash
+        run: |
+          version="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[0].version')"
+          test "$GITHUB_REF_TYPE" = "tag"
+          test "$GITHUB_REF_NAME" = "v$version"
+      - run: cargo package --locked
+      - name: Dry run
+        if: github.event_name == 'workflow_dispatch' && !inputs.publish
+        run: cargo publish --locked --dry-run
+      - name: Authenticate with crates.io
+        id: crates-io-auth
+        if: github.event_name == 'push' || inputs.publish
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: Publish to crates.io
+        if: github.event_name == 'push' || inputs.publish
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}

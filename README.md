@@ -12,12 +12,12 @@ Rust port of the [Silero Voice Activity Detector](https://github.com/snakers4/si
 
 ## Features
 
-- 🌍 **Universal** — Silero VAD was trained on massive corpora covering 6,000+ languages, so it performs well across domains and under noisy conditions.
-- 🧠 **Pre-trained accuracy** — ships with Silero ONNX models (`opset 15` & `16`) inside `src/silero_vad/data`, so no extra downloads are required.
-- 🖥️ **CPU friendly** — defaults to ONNX Runtime’s CPU execution provider for predictable server and edge runs, while keeping other providers available if you reconfigure `LoadOptions`.
-- 🔄 **Streaming ready** — `forward_chunk` keeps internal state for long-running streams, while `audio_forward` processes entire buffers offline.
-- 🎚️ **Configurable thresholds** — `VadParameters` lets you tune thresholds, speech/silence windows, and return units (samples or seconds) for rapid adaptation to new setups.
-- 🔧 **Helper APIs** — ships with `read_audio`, `save_audio`, `get_speech_timestamps`, `collect_chunks`, `drop_chunks`, and `VadIterator` for quick end-to-end adoption.
+- **Universal** — Silero VAD was trained on massive corpora covering 6,000+ languages, so it performs well across domains and under noisy conditions.
+- **Pre-trained accuracy** — ships with Silero ONNX models (`opset 15` & `16`) inside `src/silero_vad/data`, so no extra downloads are required.
+- **CPU friendly** — defaults to ONNX Runtime’s CPU execution provider for predictable server and edge runs, while keeping other providers available if you reconfigure `LoadOptions`.
+- **Streaming ready** — `forward_chunk` keeps internal state for long-running streams, while `audio_forward` processes entire buffers offline.
+- **Configurable thresholds** — `VadParameters` lets you tune thresholds, speech/silence windows, and return units (samples or seconds) for rapid adaptation to new setups.
+- **Helper APIs** — ships with `read_audio`, `save_audio`, `get_speech_timestamps`, `collect_chunks`, `drop_chunks`, and `VadIterator` for quick end-to-end adoption.
 
 ## Installation
 
