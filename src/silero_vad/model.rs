@@ -120,7 +120,7 @@ impl OnnxModel {
 
     fn normalize_input(&self, mut input: Array2<f32>, sr: u32) -> Result<(Array2<f32>, u32)> {
         let mut sr = sr;
-        if sr != 16_000 && sr.is_multiple_of(16_000) {
+        if sr != 16_000 && sr % 16_000 == 0 {
             let step = (sr / 16_000) as usize;
             let cols = input.ncols();
             let new_cols = cols.div_ceil(step);

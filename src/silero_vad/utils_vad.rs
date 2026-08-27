@@ -403,7 +403,7 @@ pub fn get_speech_timestamps(
     }
 
     let mut step = 1usize;
-    if sampling_rate > 16_000 && sampling_rate.is_multiple_of(16_000) {
+    if sampling_rate > 16_000 && sampling_rate % 16_000 == 0 {
         let factor = (sampling_rate / 16_000) as usize;
         step = factor.max(1);
         sampling_rate = 16_000;
